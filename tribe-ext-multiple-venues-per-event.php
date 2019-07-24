@@ -28,6 +28,7 @@ namespace Tribe\Extensions\Multi_Venue_Events;
 use Tribe__Autoloader;
 use Tribe__Dependency;
 use Tribe__Extension;
+use Tribe__Events__Venue;
 
 /**
  * Define Constants
@@ -70,11 +71,11 @@ if (
 		private $opts_prefix = '';
 
 		/**
-		 * Is Events Calendar PRO active. If yes, we will add some extra functionality.
+		 * Is Community Events active. If yes, we will add some extra functionality.
 		 *
 		 * @return bool
 		 */
-		public $ecp_active = false;
+		public $ce_active = false;
 
 		/**
 		 * Setup the Extension's properties.
@@ -113,13 +114,13 @@ if (
 		 * Useful for conditionally-requiring a Tribe plugin, whether to add extra functionality
 		 * or require a certain version but only if it is active.
 		 */
-		public function detect_tec_pro() {
+		public function detect_ce() {
 			/** @var Tribe__Dependency $dep */
 			$dep = tribe( Tribe__Dependency::class );
 
-			if ( $dep->is_plugin_active( 'Tribe__Events__Pro__Main' ) ) {
-				$this->add_required_plugin( 'Tribe__Events__Pro__Main', '4.3.3' );
-				$this->ecp_active = true;
+			if ( $dep->is_plugin_active( 'Tribe__Events__Community__Main' ) ) {
+				$this->add_required_plugin( 'Tribe__Events__Community__Main', '4.3.3' );
+				$this->ce_active = true;
 			}
 		}
 
@@ -152,11 +153,8 @@ if (
 
 			$this->get_settings();
 
-			// TODO: Just a test. Remove this.
-			$this->testing_hello_world();
-
-			// Insert filters and hooks here
-			add_filter( 'thing_we_are_filtering', [ $this, 'my_custom_function' ] );
+			// Insert filter and action hooks here
+			add_filter( 'tribe_events_linked_post_type_args', [ $this, 'tec_multiple_venue_support' ], 20, 2 );
 		}
 
 		/**
@@ -232,17 +230,6 @@ if (
 		}
 
 		/**
-		 * TODO: Testing Hello World. Delete this for your new extension.
-		 */
-		public function testing_hello_world() {
-			$message = sprintf( '<p>Hello World from %s. Make sure to remove this in your own new extension.</p>', '<strong>' . $this->get_name() . '</strong>' );
-
-			$message .= sprintf( '<p><strong>Bonus!</strong> Get one of our own custom option values: %s</p><p><em>See the code to learn more.</em></p>', $this->get_one_custom_option() );
-
-			tribe_notice( PLUGIN_TEXT_DOMAIN . '-hello-world', $message, [ 'type' => 'info' ] );
-		}
-
-		/**
 		 * Demonstration of getting this extension's `a_setting` option value.
 		 *
 		 * TODO: Rework or remove this.
@@ -267,10 +254,21 @@ if (
 		}
 
 		/**
-		 * Include a docblock for every class method and property.
+		 * Filter Venues linked post type to allow multiple.
+		 *
+		 * @see \Tribe__Events__Venue::filter_linked_post_type_args() Where `allow_multiple` is disabled (priority 10).
+		 *
+		 * @param array  $args      Array of linked post type arguments.
+		 * @param string $post_type Linked post type.
+		 *
+		 * @return array
 		 */
-		public function my_custom_function() {
-			// do your custom stuff
+		public function tec_multiple_venue_support( $args, $post_type ) {
+			if ( Tribe__Events__Venue::POSTTYPE === $post_type ) {
+				$args[ 'allow_multiple' ] = true;
+			}
+
+			return $args;
 		}
 
 	} // end class
